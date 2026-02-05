@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원석T의 매쓰 바이브 (MATH VIBE)</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            overflow: hidden; 
+            user-select: none;
+        }
+
+        .font-logo { font-family: 'Black Han Sans', sans-serif; }
+        .font-game { font-family: 'Do Hyeon', sans-serif; }
+        .font-marker { font-family: 'Permanent Marker', cursive; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-red {
+            background: rgba(69, 10, 10, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        
+        /* Neon Effects */
+        .neon-blue { text-shadow: 0 0 10px #3b82f6, 0 0 20px #2563eb; }
+        .neon-purple { text-shadow: 0 0 10px #a855f7, 0 0 20px #9333ea; }
+        .neon-red { text-shadow: 0 0 10px #ef4444, 0 0 20px #dc2626; }
+        
+        /* Animations */
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+
+        /* Intro Specific */
+        .intro-text-easy {
+            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transform: rotate(-5deg);
+        }
+        
+        .locked-overlay {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(0, 0, 0, 0.5),
+                rgba(0, 0, 0, 0.5) 10px,
+                rgba(255, 0, 0, 0.1) 10px,
+                rgba(255, 0, 0, 0.1) 20px
+            );
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ----------------------------------------------------------------------------
+        // 1. DATA & GENERATOR
+        // ----------------------------------------------------------------------------
+        
+        const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        // (A) Infinite Generator (Covers Diff 1-3 mainly)
+        const Generator = {
+            algebra: (diff) => {
+                if(diff <= 3) {
+                    const type = getRandomInt(1, 5);
+                    if(type === 1) { // Log sum
+                        const p1=getRandomInt(2,5), p2=getRandomInt(1,3);
+                        return { q: `$\\log_2 ${Math.pow(2,p1)} + \\log_2 ${Math.pow(2,p2)}$`, a: String(p1+p2), time:20, type:'short' };
+                    } else if(type === 2) { // Arithmetic Seq term
+                        const a = getRandomInt(2,9), d=getRandomInt(2,6);
+                        const n = getRandomInt(5,10);
+                        return { q: `첫째항 ${a}, 공차 ${d}인 등차수열의 제${n}항은?`, a: String(a+(n-1)*d), time:25, type:'short' };
+                    } else if(type === 3) { // Exponents
+                        const base = getRandomInt(2,3);
+                        const exp1 = getRandomInt(2,3);
+                        const exp2 = getRandomInt(1,2);
+                        return { q: `$${base}^${exp1} \\times ${base}^${exp2}$ 의 값은?`, a: String(Math.pow(base, exp1+exp2)), time:15, type:'short' };
+                    } else if(type === 4) { // Sigma constant
+                        const n = getRandomInt(5, 20);
+                        const c = getRandomInt(2, 9);
+                        return { q: `$\\sum_{k=1}^{${n}} ${c}$ 의 값은?`, a: String(n*c), time:15, type:'short' };
+                    } else { // Quad eq sum of roots
+                        const sum = getRandomInt(3, 9);
+                        const prod = getRandomInt(2, 10);
+                        return { q: `이차방정식 $x^2 - ${sum}x + ${prod} = 0$ 의 두 근의 합은?`, a: String(sum), time:20, type:'short' };
+                    }
+                }
+                return null;
+            },
+            calculus: (diff) => {
+                if(diff <= 3) {
+                    const type = getRandomInt(1, 4);
+                    if(type === 1) { // Limit simple poly
+                        const a = getRandomInt(1,3);
+                        return { q: `$\\lim_{x \\to ${a}} (x^2 + ${getRandomInt(1,5)}x)$`, a: String(a*a + a*getRandomInt(1,5) || a*a+a), time:20, type:'short' };
+                    } else if(type === 2) { // Derivative at 0
+                        const a = getRandomInt(2,9);
+                        const b = getRandomInt(1,9);
+                        return { q: `함수 $f(x)=x^3 + ${a}x + ${b}$ 에 대하여 $f'(0)$은?`, a: String(a), time:20, type:'short' };
+                    } else if(type === 3) { // Integral x^n
+                        const n = getRandomInt(1,2);
+                        return { q: `$\\int_0^{${n+1}} ${n+1}x^${n} dx$`, a: String(Math.pow(n+1, n+1)), time:25, type:'short' };
+                    } else { // Avg rate of change
+                        return { q: `함수 $f(x)=x^2$에서 $x$가 0에서 2까지 변할 때 평균변화율은?`, a: "2", time:20, type:'short'};
+                    }
+                }
+                return null;
+            },
+            geometry: (diff) => {
+                if(diff <= 3) {
+                    const type = getRandomInt(1, 3);
+                    if(type === 1) { // Vector Mag
+                        const x1=getRandomInt(1,4), y1=getRandomInt(1,3);
+                        if(x1==3 && y1==4) return { q: `$\\vec{a}=(3, 4)$ 의 크기는?`, a: "5", time:15, type:'short' };
+                        return { q: `벡터 $\\vec{a}=(${x1}, ${y1})$ 의 크기의 제곱은?`, a: String(x1*x1 + y1*y1), time:20, type:'short' };
+                    } else if(type===2) { // Parabola Focus
+                        const p = getRandomInt(1,5);
+                        return { q: `포물선 $y^2=${4*p}x$의 초점의 $x$좌표는?`, a: String(p), time:15, type:'short'};
+                    } else { // Ellipse major axis
+                        const a = getRandomInt(3,6);
+                        const b = getRandomInt(1,2);
+                        return { q: `타원 $\\frac{x^2}{${a*a}} + \\frac{y^2}{${b*b}} = 1$ 의 장축의 길이는?`, a: String(2*a), time:20, type:'short'};
+                    }
+                }
+                return null;
+            },
+            prob_stat: (diff) => {
+                if(diff <= 3) {
+                    const type = getRandomInt(1, 3);
+                    if(type===1) { // nP2
+                        const n=getRandomInt(4,9);
+                        return { q: `$_${n}\\mathrm{P}_2$ 의 값은?`, a: String(n*(n-1)), time:15, type:'short'};
+                    } else if(type===2) { // nC2
+                        const n=getRandomInt(4,9);
+                        return { q: `$_${n}\\mathrm{C}_2$ 의 값은?`, a: String((n*(n-1))/2), time:20, type:'short'};
+                    } else { // Mean of Binomial
+                        const n=getRandomInt(10,50)*2;
+                        return { q: `이항분포 $B(${n}, \\frac{1}{2})$ 의 평균은?`, a: String(n/2), time:20, type:'short'};
+                    }
+                }
+                return null;
+            }
+        };
+
+        // (B) Expanded Static DB (Diff 3-6)
+        const STATIC_DB = [
+            // --- Algebra ---
+            { subject: 'algebra', diff: 3, q: '$\\sum_{k=1}^{10} (2k - 1)$ 의 값을 구하시오.', a: '100' },
+            { subject: 'algebra', diff: 3, q: '등비수열 $2, 4, 8, \\dots$ 의 제 7항은?', a: '128' },
+            { subject: 'algebra', diff: 3, q: '$4^{\\frac{3}{2}}$ 의 값은?', a: '8' },
+            { subject: 'algebra', diff: 3, q: '부등식 $3^{x-1} < 27$ 을 만족하는 자연수 $x$의 개수는?', a: '3' },
+            { subject: 'algebra', diff: 3, q: '$\\log_3 9 + \\log_2 16$ 의 값은?', a: '6' },
+            { subject: 'algebra', diff: 4, q: '이차방정식 $x^2 - 4x - 12 = 0$ 의 두 근의 차는?', a: '8' },
+            { subject: 'algebra', diff: 4, q: '수열 $\\{a_n\\}$이 $a_1=1, a_{n+1}=a_n+3$일 때, $a_{10}$은?', a: '28' },
+            { subject: 'algebra', diff: 4, q: '삼각함수 $y=2\\sin(3x) + 1$ 의 최댓값은?', a: '3' },
+            { subject: 'algebra', diff: 4, q: '$\\log_3 2 \\times \\log_2 27$ 의 값은?', a: '3' },
+            { subject: 'algebra', diff: 4, q: '$\\sum_{k=1}^5 k^2$ 의 값은?', a: '55' },
+            { subject: 'algebra', diff: 5, q: '$\\log_2 (x-1) + \\log_2 (x+2) = 2$ 를 만족하는 양수 $x$?', a: '2' },
+            { subject: 'algebra', diff: 5, q: '모든 실수 $x$에 대하여 $x^2 + 2ax + 9 \\ge 0$ 이 성립할 때 양수 $a$의 최댓값?', a: '3' },
+            { subject: 'algebra', diff: 5, q: '수열 $\\{a_n\\}$의 합 $S_n = n^2 + n$ 일 때, $a_5$의 값은?', a: '10' },
+            { subject: 'algebra', diff: 5, q: '삼각방정식 $2\\sin^2 x - \\cos x - 1 = 0$ ($0 \\le x < 2\\pi$)의 실근의 개수는?', a: '3' },
+            { subject: 'algebra', diff: 5, q: '등차수열 $\\{a_n\\}$에 대하여 $a_3=7, a_7=15$일 때 $a_{10}$은?', a: '21' },
+            { subject: 'algebra', diff: 6, q: '수열 $\\{a_n\\}$에 대하여 $\\sum a_k = n^2+2n$ 일 때, $a_1+a_{10}$?', a: '24' },
+            { subject: 'algebra', diff: 6, q: '방정식 $4^x - 3 \\cdot 2^{x+1} + 8 = 0$ 의 두 실근의 합은?', a: '3' },
+            { subject: 'algebra', diff: 6, q: '수열 $\\{a_n\\}$이 $a_1=2, a_{n+1} = 2a_n$일 때 $\\log_2 a_{10}$의 값은?', a: '10' },
+            { subject: 'algebra', diff: 6, q: '$f(x)=2^x + 2^{-x}$ 의 최솟값은?', a: '2' },
+
+            // --- Calculus ---
+            { subject: 'calculus', diff: 3, q: '곡선 $y=x^2-4x$ 위의 점 $(1,-3)$에서의 접선의 기울기는?', a: '-2' },
+            { subject: 'calculus', diff: 3, q: '$\\int_1^3 2x dx$ 의 값은?', a: '8' },
+            { subject: 'calculus', diff: 3, q: '$\\lim_{x \\to \\infty} \\frac{2x^2+1}{x^2-3}$ 의 값은?', a: '2' },
+            { subject: 'calculus', diff: 3, q: '함수 $f(x)=x^3$에 대하여 $f\'(2)$의 값은?', a: '12' },
+            { subject: 'calculus', diff: 4, q: '함수 $f(x)=x^3-3x^2+k$의 극솟값이 2일 때 $k$는?', a: '6' },
+            { subject: 'calculus', diff: 4, q: '곡선 $y=x^3$과 $x$축 및 $x=2$로 둘러싸인 넓이는?', a: '4' },
+            { subject: 'calculus', diff: 4, q: '함수 $f(x)=\\ln x$에 대하여 $f\'(e)$의 값은?', a: '1/e', subA: ['1/e', 'e^-1'] },
+            { subject: 'calculus', diff: 4, q: '$\\lim_{x \\to 0} \\frac{\\sin 3x}{x}$ 의 값은?', a: '3' },
+            { subject: 'calculus', diff: 5, q: '$\\int_0^{\\pi} x \\sin x dx$ 의 값은?', a: 'pi', subA:['pi','3.14','파이'] },
+            { subject: 'calculus', diff: 5, q: '곡선 $y=x^2$과 직선 $y=x$로 둘러싸인 넓이에 6을 곱하면?', a: '1' },
+            { subject: 'calculus', diff: 5, q: '$\\lim_{x \\to 0} \\frac{\\ln(1+3x)}{x}$ 의 값은?', a: '3' },
+            { subject: 'calculus', diff: 5, q: '함수 $f(x)=x e^{-x}$ 의 최댓값은 $1/e$이다. 극댓값을 갖는 $x$좌표는?', a: '1' },
+            { subject: 'calculus', diff: 5, q: '$\\int_0^1 e^{2x} dx$ 의 값은? (단, 답은 (e^2-1)/2)', a: '(e^2-1)/2', subA:['(e^2-1)/2', '0.5(e^2-1)'] },
+            { subject: 'calculus', diff: 6, q: '함수 $f(x)=\\ln x$ 위의 점 $(e,1)$에서의 접선의 $y$절편?', a: '0' },
+            { subject: 'calculus', diff: 6, q: '$\\int_1^e x \\ln x dx$의 값은 $\\frac{e^2+a}{4}$이다. $a$의 값은?', a: '1' },
+            { subject: 'calculus', diff: 6, q: '수직선 위를 움직이는 점 P의 속도 $v(t)=3t^2-6t$일 때, $t=0$에서 $t=3$까지 움직인 거리는?', a: '8' },
+            { subject: 'calculus', diff: 6, q: '곡선 $y=\\frac{1}{x}$ 위의 점 $(1,1)$에서의 접선이 $x$축과 만나는 점의 $x$좌표는?', a: '2' },
+
+            // --- Geometry ---
+            { subject: 'geometry', diff: 3, q: '타원 $\\frac{x^2}{16}+\\frac{y^2}{7}=1$의 두 초점 사이 거리는?', a: '6' },
+            { subject: 'geometry', diff: 3, q: '포물선 $y^2=12x$의 준선의 방정식은 $x=k$이다. $k$는?', a: '-3' },
+            { subject: 'geometry', diff: 3, q: '벡터 $\\vec{a}=(1,2)$와 $\\vec{b}=(3,1)$의 내적값은?', a: '5' },
+            { subject: 'geometry', diff: 4, q: '쌍곡선 $x^2-y^2=2$ 위의 점 $(2,\\sqrt{2})$에서 접선의 기울기 제곱은?', a: '2' },
+            { subject: 'geometry', diff: 4, q: '벡터 $\\vec{a}=(1,2), \\vec{b}=(3, k)$가 수직일 때 $k$?', a: '-1.5', subA:['-1.5','-3/2'] },
+            { subject: 'geometry', diff: 4, q: '좌표공간의 점 $(1,2,3)$에서 $xy$평면까지의 거리는?', a: '3' },
+            { subject: 'geometry', diff: 4, q: '두 벡터 $\\vec{a}, \\vec{b}$가 이루는 각이 $60^\\circ$이고 크기가 각각 2, 3일 때 내적?', a: '3' },
+            { subject: 'geometry', diff: 5, q: '$\\mid\\vec{a}\\mid=2, \\mid\\vec{b}\\mid=3$이고 각이 $60^\\circ$일 때 $\\mid\\vec{a}-\\vec{b}\\mid^2$의 값은?', a: '7' },
+            { subject: 'geometry', diff: 5, q: '구 $x^2+y^2+z^2-2x-4y=0$의 반지름 제곱은?', a: '5' },
+            { subject: 'geometry', diff: 5, q: '포물선 $y^2=8x$ 위의 점 $(2,4)$에서의 접선의 $x$절편은?', a: '-2' },
+            { subject: 'geometry', diff: 6, q: '벡터 $\\vec{a}+\\vec{b}$와 $\\vec{a}-\\vec{b}$가 수직이고 $\\mid\\vec{a}\\mid=2$일 때 $\\mid\\vec{b}\\mid$?', a: '2' },
+            { subject: 'geometry', diff: 6, q: '평면 $\\alpha$와 $\\beta$가 이루는 각이 $60^\\circ$이고, $\\alpha$ 위의 넓이 10인 도형의 $\\beta$ 위로의 정사영 넓이는?', a: '5' },
+            { subject: 'geometry', diff: 6, q: '타원 $\\frac{x^2}{25} + \\frac{y^2}{9} = 1$ 의 단축의 길이는?', a: '6' },
+
+            // --- Prob/Stat ---
+            { subject: 'prob_stat', diff: 3, q: '$_6\\mathrm{C}_2$ 의 값은?', a: '15' },
+            { subject: 'prob_stat', diff: 3, q: '이항분포 $B(10, 0.5)$의 분산은?', a: '2.5', subA:['2.5','5/2'] },
+            { subject: 'prob_stat', diff: 3, q: '$_5\\mathrm{P}_3$ 의 값은?', a: '60' },
+            { subject: 'prob_stat', diff: 4, q: '5개 문자 A,A,A,B,B 일렬 나열 경우의 수?', a: '10' },
+            { subject: 'prob_stat', diff: 4, q: '주사위 2개 합이 10 이상일 확률은 $1/k$이다. $k$는?', a: '6' },
+            { subject: 'prob_stat', diff: 4, q: '두 사건 A,B 독립, $P(A)=0.5, P(B)=0.4$일 때 교집합 확률?', a: '0.2' },
+            { subject: 'prob_stat', diff: 4, q: '서로 다른 주사위 2개를 동시에 던질 때 눈의 수의 차가 0일 확률은 $1/k$. $k$는?', a: '6' },
+            { subject: 'prob_stat', diff: 5, q: '방정식 $x+y+z=9$ (음이 아닌 정수해) 개수?', a: '55' },
+            { subject: 'prob_stat', diff: 5, q: '남학생 3명, 여학생 2명 원탁에 앉을 때 여학생끼리 이웃할 확률 분모(기약분수)?', a: '5' }, 
+            { subject: 'prob_stat', diff: 5, q: '1~10 중 3개 뽑을 때 최대값이 8일 확률 분모(기약분수)?', a: '40', subA: ['40'] }, 
+            { subject: 'prob_stat', diff: 5, q: '이항분포 $B(n, 1/2)$의 분산이 25일 때 $n$의 값은?', a: '100' },
+            { subject: 'prob_stat', diff: 6, q: '확률변수 $X$가 $N(10, 2^2)$을 따를 때 $P(X \\le 10)$?', a: '0.5' },
+            { subject: 'prob_stat', diff: 6, q: '같은 종류 사탕 10개를 3명에게 적어도 1개씩 주는 경우의 수?', a: '36' },
+            { subject: 'prob_stat', diff: 6, q: '주사위 1개를 3번 던질 때, 나오는 눈의 수가 모두 다를 확률은 $5/k$이다. $k$는?', a: '9' }
+        ];
+
+        const TIERS = [
+            { name: "BRONZE", color: "text-orange-400", bg: "bg-orange-600" },
+            { name: "SILVER", color: "text-slate-300", bg: "bg-slate-500" },
+            { name: "GOLD", color: "text-yellow-400", bg: "bg-yellow-600" },
+            { name: "PLATINUM", color: "text-cyan-400", bg: "bg-cyan-600" },
+            { name: "DIAMOND", color: "text-purple-400", bg: "bg-purple-600" },
+            { name: "CHALLENGER", color: "text-red-500", bg: "bg-red-600" }
+        ];
+
+        const SUBJ_MAP = {
+            'algebra': '대수', 'calculus': '미적분', 'geometry': '기하', 'prob_stat': '확률과 통계'
+        };
+
+        // ----------------------------------------------------------------------------
+        // 2. MAIN APP COMPONENT
+        // ----------------------------------------------------------------------------
+
+        const App = () => {
+            const [scene, setScene] = useState('menu'); 
+            
+            // Shared Game State
+            const [soloMode, setSoloMode] = useState(''); 
+            const [soloQs, setSoloQs] = useState([]);
+            const [qIndex, setQIndex] = useState(0);
+            const [score, setScore] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(0);
+            const [input, setInput] = useState('');
+            const [feedback, setFeedback] = useState(null);
+            const [combo, setCombo] = useState(0);
+            const [history, setHistory] = useState([]);
+
+            // Practice Setup
+            const [pSubj, setPSubj] = useState(null);
+            const [pDiff, setPDiff] = useState(null); // 'ALL' for Random
+
+            // Battle State
+            const [battleRound, setBattleRound] = useState(1);
+            const [battleQs, setBattleQs] = useState([]);
+            const [p1Score, setP1Score] = useState(0);
+            const [p2Score, setP2Score] = useState(0);
+            const [p1In, setP1In] = useState('');
+            const [p2In, setP2In] = useState('');
+            const [roundWinner, setRoundWinner] = useState(null);
+            
+            // Battle - One Chance & Penalty
+            const [p1Locked, setP1Locked] = useState(false);
+            const [p2Locked, setP2Locked] = useState(false);
+
+            const timerRef = useRef(null);
+
+            // MathJax Trigger
+            useEffect(() => {
+                if (window.MathJax) {
+                    setTimeout(() => window.MathJax.typesetPromise(), 50);
+                }
+            }, [scene, qIndex, feedback, battleRound, roundWinner]);
+
+            // Timer Logic
+            useEffect(() => {
+                if ((scene === 'game_solo' || scene === 'game_battle') && !feedback && !roundWinner) {
+                    if (timeLeft > 0) {
+                        timerRef.current = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+                    } else {
+                        if (scene === 'game_solo') handleSoloSubmit(null, true);
+                        if (scene === 'game_battle') handleBattleEnd('timeout');
+                    }
+                }
+                return () => clearTimeout(timerRef.current);
+            }, [timeLeft, scene, feedback, roundWinner]);
+
+            // ------------------------------------------------------------------------
+            // LOGIC
+            // ------------------------------------------------------------------------
+            
+            const createSoloPool = (mode, subj, diff) => {
+                let pool = [];
+                const count = mode === 'challenge' ? 20 : 10;
+                
+                for(let i=0; i<count; i++) {
+                    let tDiff = diff === 'ALL' ? getRandomInt(1, 6) : diff;
+                    let tSubj = (subj === 'RANDOM' || !subj) ? getRandomItem(Object.keys(SUBJ_MAP)) : subj;
+
+                    if (mode === 'challenge') {
+                        if (i < 5) tDiff = getRandomInt(1,2);
+                        else if (i < 12) tDiff = getRandomInt(3,4);
+                        else tDiff = getRandomInt(5,6);
+                        tSubj = getRandomItem(Object.keys(SUBJ_MAP));
+                    }
+
+                    // 1. Try Generator
+                    let q = null;
+                    if (tDiff <= 3 && Generator[tSubj]) q = Generator[tSubj](tDiff);
+                    
+                    // 2. Try Static DB
+                    if (!q) {
+                        const cands = STATIC_DB.filter(x => x.subject === tSubj && Math.abs(x.diff - tDiff) <= 1);
+                        if(cands.length > 0) q = getRandomItem(cands);
+                    }
+                    
+                    // 3. Fallback
+                    if (!q && Generator[tSubj]) q = Generator[tSubj](1);
+                    if (!q) q = STATIC_DB[0];
+
+                    if(q) {
+                        // Apply default time if missing in static
+                        const qTime = q.time || (tDiff <= 2 ? 20 : tDiff <= 4 ? 30 : 60);
+                        pool.push({ ...q, id: `q_${i}_${Date.now()}_${Math.random()}`, diff: tDiff, subject: tSubj, time: qTime });
+                    }
+                }
+                return pool;
+            };
+
+            const startSolo = (mode, s, d) => {
+                const qs = createSoloPool(mode, s, d);
+                setSoloMode(mode);
+                setSoloQs(qs);
+                setQIndex(0);
+                setScore(0);
+                setCombo(0);
+                setHistory([]);
+                setInput('');
+                setFeedback(null);
+                setTimeLeft(qs[0].time);
+                setScene('game_solo');
+            };
+
+            const handleSoloSubmit = (val, isTimeout=false) => {
+                const cur = soloQs[qIndex];
+                const userAns = val !== null ? val : input;
+                const normUser = String(userAns).trim().replace(/\s+/g, '');
+                const normCorr = String(cur.a).trim().replace(/\s+/g, '');
+                
+                let isCorrect = !isTimeout && (normUser === normCorr);
+                if(!isCorrect && !isTimeout && cur.subA && cur.subA.includes(normUser)) isCorrect = true;
+
+                setHistory(prev => [...prev, { ...cur, userAns: isTimeout?'TIME':userAns, isCorrect }]);
+
+                if(isCorrect) {
+                    const bonus = cur.diff*100 + timeLeft*10 + combo*50;
+                    setScore(prev => prev + 100 + bonus);
+                    setCombo(prev => prev + 1);
+                    setFeedback('correct');
+                } else {
+                    setCombo(0);
+                    setFeedback(isTimeout ? 'timeout' : 'wrong');
+                }
+
+                setTimeout(() => {
+                    if (qIndex < soloQs.length - 1) {
+                        setQIndex(prev => prev + 1);
+                        setTimeLeft(soloQs[qIndex+1].time);
+                        setInput('');
+                        setFeedback(null);
+                    } else {
+                        setScene('result_solo');
+                    }
+                }, 1500);
+            };
+
+            const startBattle = () => {
+                const hardPool = STATIC_DB.filter(q => q.diff >= 4);
+                const qs = hardPool.sort(() => 0.5 - Math.random()).slice(0, 3);
+                
+                setBattleQs(qs.length < 3 ? STATIC_DB.slice(0,3) : qs);
+                setBattleRound(1);
+                setP1Score(0);
+                setP2Score(0);
+                setP1In('');
+                setP2In('');
+                setP1Locked(false);
+                setP2Locked(false);
+                setRoundWinner(null);
+                setTimeLeft(180); // 3 minutes total for Battle
+                setScene('game_battle');
+            };
+
+            const checkBattle = (player, val) => {
+                const cur = battleQs[battleRound - 1];
+                const cleanVal = String(val).trim().replace(/\s+/g, '');
+                let isCorrect = (cleanVal === String(cur.a));
+                if(!isCorrect && cur.subA && cur.subA.includes(cleanVal)) isCorrect = true;
+                
+                if(isCorrect) {
+                    handleBattleEnd(player);
+                } else {
+                    // Penalty and Lock
+                    if (player === 'p1') {
+                        setP1Score(prev => prev - 50);
+                        setP1Locked(true);
+                        setP1In('WRONG');
+                    } else {
+                        setP2Score(prev => prev - 50);
+                        setP2Locked(true);
+                        setP2In('WRONG');
+                    }
+                    
+                    // Check if both locked
+                    if ((player === 'p1' && p2Locked) || (player === 'p2' && p1Locked)) {
+                        handleBattleEnd('draw'); // both failed
+                    }
+                }
+            };
+
+            const handleBattleEnd = (winner) => {
+                setRoundWinner(winner);
+                const cur = battleQs[battleRound - 1];
+                
+                if(winner === 'p1') {
+                    const pts = (cur.diff * 100) + (timeLeft * 10);
+                    setP1Score(prev => prev + pts);
+                } else if(winner === 'p2') {
+                    const pts = (cur.diff * 100) + (timeLeft * 10);
+                    setP2Score(prev => prev + pts);
+                }
+                // if draw, no points added (but penalties applied already)
+
+                setTimeout(() => {
+                    if(battleRound < 3) {
+                        setBattleRound(prev => prev + 1);
+                        setTimeLeft(180); 
+                        setP1In('');
+                        setP2In('');
+                        setP1Locked(false);
+                        setP2Locked(false);
+                        setRoundWinner(null);
+                    } else {
+                        setScene('result_battle');
+                    }
+                }, 3000);
+            };
+
+            // ------------------------------------------------------------------------
+            // RENDERERS
+            // ------------------------------------------------------------------------
+
+            const renderMenu = () => (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+                    <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[100px] animate-float"></div>
+                    <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[100px] animate-float" style={{animationDelay: '1.5s'}}></div>
+
+                    <div className="z-10 text-center animate-slide-up w-full max-w-5xl">
+                        <div className="mb-8">
+                            <div className="text-gray-400 font-bold tracking-[0.5em] text-sm uppercase mb-2">Produced by OneSeokT</div>
+                            <h1 className="text-7xl md:text-9xl font-logo text-white mb-2 leading-none neon-blue">MATH VIBE</h1>
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-4 transform -rotate-2">
+                                <span className="text-4xl md:text-5xl font-game text-white">수학은 뭐다?</span>
+                                <span className="text-6xl md:text-7xl font-marker intro-text-easy neon-purple">EASY</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 px-4">
+                            <button onClick={() => startSolo('challenge', null, 'ALL')} className="glass p-8 rounded-3xl text-left hover:bg-blue-600/20 transition-all group border-t-4 border-blue-500 hover:-translate-y-2">
+                                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">🏆</div>
+                                <h3 className="text-2xl font-bold text-white mb-2">챌린지 모드</h3>
+                                <p className="text-gray-400 text-sm">20단계 레벨업<br/>브론즈부터 챌린저까지</p>
+                            </button>
+                            <button onClick={() => setScene('setup_practice')} className="glass p-8 rounded-3xl text-left hover:bg-purple-600/20 transition-all group border-t-4 border-purple-500 hover:-translate-y-2">
+                                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">📚</div>
+                                <h3 className="text-2xl font-bold text-white mb-2">유형 연습</h3>
+                                <p className="text-gray-400 text-sm">약점 집중 공략<br/>유형/난이도/랜덤 설정</p>
+                            </button>
+                            <button onClick={startBattle} className="glass-red p-8 rounded-3xl text-left hover:bg-red-600/20 transition-all group border-t-4 border-red-500 hover:-translate-y-2">
+                                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform">⚔️</div>
+                                <h3 className="text-2xl font-bold text-red-400 mb-2">길거리 수학 배틀</h3>
+                                <p className="text-gray-400 text-sm">1 vs 1 진검승부<br/>3분 타임어택 & 페널티</p>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderPracticeSetup = () => (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                    <h2 className="text-4xl font-game text-purple-400 mb-10 neon-purple">유형 연습 설정</h2>
+                    <div className="glass p-10 rounded-3xl w-full max-w-3xl space-y-8 animate-slide-up">
+                        <div>
+                            <label className="block text-gray-400 mb-3 font-bold">과목 선택</label>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                {Object.keys(SUBJ_MAP).map(k => (
+                                    <button key={k} onClick={() => setPSubj(k)} className={`py-4 rounded-xl font-bold transition-all ${pSubj===k ? 'bg-purple-600 text-white shadow-lg' : 'bg-slate-800 text-gray-500'}`}>
+                                        {SUBJ_MAP[k]}
+                                    </button>
+                                ))}
+                                <button onClick={() => setPSubj('RANDOM')} className={`py-4 rounded-xl font-bold transition-all ${pSubj==='RANDOM' ? 'bg-gradient-to-r from-pink-500 to-yellow-500 text-white shadow-lg' : 'bg-slate-800 text-gray-500'}`}>
+                                    랜덤 🎲
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-gray-400 mb-3 font-bold">난이도</label>
+                            <div className="flex flex-wrap gap-3">
+                                {[1,2,3,4,5,6].map(d => (
+                                    <button key={d} onClick={() => setPDiff(d)} className={`px-4 py-2 rounded-lg font-bold border transition-all ${pDiff===d ? 'bg-white text-black' : 'border-slate-600 text-gray-500'}`}>
+                                        {TIERS[d-1].name}
+                                    </button>
+                                ))}
+                                <button onClick={() => setPDiff('ALL')} className={`px-6 py-2 rounded-lg font-bold border transition-all ${pDiff==='ALL' ? 'bg-gradient-to-r from-green-400 to-blue-500 text-white border-transparent' : 'border-slate-600 text-gray-500'}`}>
+                                    RANDOM
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex gap-4 pt-4">
+                            <button onClick={() => setScene('menu')} className="flex-1 py-4 bg-gray-800 rounded-xl font-bold text-gray-400">뒤로</button>
+                            <button onClick={() => startSolo('practice', pSubj, pDiff)} disabled={!pSubj || !pDiff} className={`flex-1 py-4 rounded-xl font-bold text-xl ${pSubj && pDiff ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-600'}`}>
+                                START
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            const renderSoloGame = () => {
+                const q = soloQs[qIndex];
+                const tier = TIERS[q.diff-1];
+                const progress = (qIndex / soloQs.length) * 100;
+                
+                // Calculate time percentage for bar
+                const timeMax = q.time; // Max time for question
+                const timePercent = (timeLeft / timeMax) * 100;
+
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+                        {/* Global Progress Bar (Top) */}
+                        <div className="absolute top-0 left-0 h-1.5 w-full bg-slate-800">
+                             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300" style={{width: `${progress}%`}}></div>
+                        </div>
+                        
+                        <div className="w-full max-w-4xl mb-6 flex justify-between items-end mt-4">
+                            <div>
+                                <span className={`px-3 py-1 rounded text-xs font-black ${tier.bg} text-white mb-2 inline-block`}>{tier.name}</span>
+                                <div className="text-gray-400 text-sm font-bold">{SUBJ_MAP[q.subject]}</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-4xl font-mono font-bold text-yellow-400 neon-blue">{score.toLocaleString()}</div>
+                                <div className="text-xs text-gray-500">SCORE</div>
+                            </div>
+                        </div>
+
+                        <div className={`glass w-full max-w-4xl p-8 md:p-16 rounded-[2.5rem] relative overflow-hidden transition-all duration-200 ${feedback==='wrong' ? 'border-red-500 shake' : feedback==='correct' ? 'border-green-500' : ''}`}>
+                            
+                            {/* Time Bar inside Card */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gray-700">
+                                <div className={`h-full transition-all duration-1000 linear ${timeLeft <= 5 ? 'bg-red-500' : 'bg-blue-400'}`} style={{width: `${timePercent}%`}}></div>
+                            </div>
+
+                            <div className="absolute top-6 right-8 font-mono text-3xl font-bold text-gray-500">{timeLeft}s</div>
+                            <div className="min-h-[200px] flex items-center justify-center text-center my-4">
+                                <div className="text-3xl md:text-5xl font-medium leading-relaxed" dangerouslySetInnerHTML={{__html: q.q}}></div>
+                            </div>
+
+                            <div className="w-full max-w-xl mx-auto relative">
+                                <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !feedback && handleSoloSubmit(null)}
+                                    className="w-full bg-slate-900/80 border border-slate-600 rounded-2xl py-6 px-8 text-center text-3xl outline-none focus:border-blue-500 transition-all placeholder-gray-700"
+                                    placeholder="정답 입력" autoFocus
+                                />
+                                <button onClick={() => !feedback && handleSoloSubmit(null)} className="absolute right-3 top-3 bottom-3 aspect-square bg-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-500">⏎</button>
+                            </div>
+
+                            {feedback && (
+                                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 animate-slide-up">
+                                    <div className={`text-7xl font-black transform -rotate-6 mb-4 ${feedback==='correct' ? 'text-green-400' : 'text-red-500'}`}>
+                                        {feedback==='correct' ? 'NICE!' : feedback==='timeout' ? 'TIME OUT' : 'WRONG'}
+                                    </div>
+                                    <div className="text-2xl font-bold">정답: <span className="text-yellow-400">{q.a}</span></div>
+                                    {feedback==='correct' && combo>1 && <div className="mt-4 text-cyan-400 font-mono font-bold animate-float">{combo} COMBO!</div>}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderBattleGame = () => {
+                const q = battleQs[battleRound-1];
+                const tier = TIERS[q.diff-1];
+
+                return (
+                    <div className="min-h-screen flex flex-col bg-slate-900">
+                        <div className="flex justify-between items-center p-6 bg-slate-800/80 backdrop-blur border-b border-slate-700">
+                            <div className="flex items-center gap-4">
+                                <span className="bg-red-600 text-white font-black px-4 py-2 rounded text-xl italic">ROUND {battleRound}/3</span>
+                                <span className={`font-bold px-3 py-1 rounded border ${tier.color} border-current text-sm`}>{tier.name}</span>
+                            </div>
+                            <div className="text-6xl font-mono font-bold text-white tracking-widest neon-red">{timeLeft}</div>
+                        </div>
+
+                        <div className="flex-1 flex items-center justify-center p-8 relative">
+                            <div className="w-full max-w-6xl glass p-12 rounded-[3rem] text-center relative">
+                                <div className="text-gray-400 font-bold mb-4 uppercase tracking-widest">{SUBJ_MAP[q.subject]}</div>
+                                <div className="text-4xl md:text-6xl font-medium leading-relaxed" dangerouslySetInnerHTML={{__html: q.q}}></div>
+                                
+                                {roundWinner && (
+                                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md rounded-[3rem] animate-slide-up">
+                                        <div className="text-3xl text-gray-400 font-bold mb-2">WINNER</div>
+                                        {roundWinner === 'timeout' || roundWinner === 'draw' ? (
+                                            <div className="text-7xl font-black text-gray-500">{roundWinner === 'draw' ? 'DRAW' : 'TIME OUT'}</div>
+                                        ) : (
+                                            <div className={`text-9xl font-black italic ${roundWinner==='p1' ? 'text-blue-500' : 'text-red-500'}`}>
+                                                {roundWinner === 'p1' ? 'PLAYER 1' : 'PLAYER 2'}
+                                            </div>
+                                        )}
+                                        {roundWinner !== 'timeout' && roundWinner !== 'draw' && <div className="mt-4 text-2xl text-yellow-400 font-bold">+{q.diff*100 + timeLeft*10} PTS</div>}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Split Controls - ONE CHANCE UI */}
+                        <div className="h-[40vh] grid grid-cols-2 border-t border-slate-700">
+                            <div className={`relative flex flex-col items-center justify-center border-r border-slate-700 transition-colors ${roundWinner==='p1' ? 'bg-blue-900/40' : 'bg-slate-900'} ${p1Locked ? 'locked-overlay' : ''}`}>
+                                <div className="absolute top-4 left-4 font-black text-blue-500 text-3xl">PLAYER 1</div>
+                                <div className="absolute top-4 right-4 font-mono text-white text-3xl font-bold">{p1Score}</div>
+                                
+                                {!p1Locked ? (
+                                    <div className="w-full max-w-md bg-slate-800/50 p-6 rounded-3xl border border-slate-600">
+                                        <label className="block text-gray-400 text-sm font-bold mb-2">답안 작성 (기회 1번)</label>
+                                        <input type="text" value={p1In} onChange={e => setP1In(e.target.value)} onKeyDown={e => e.key==='Enter' && !roundWinner && checkBattle('p1', p1In)} disabled={!!roundWinner} placeholder="입력하세요"
+                                            className="w-full bg-transparent border-b-2 border-blue-500 text-center text-4xl text-white focus:outline-none pb-2 mb-6 placeholder-gray-600 font-mono" autoComplete="off" />
+                                        <button onClick={() => !roundWinner && checkBattle('p1', p1In)} className="w-full py-4 bg-blue-600 text-white font-black text-xl rounded-xl shadow-lg hover:bg-blue-500 transition-all hover:scale-105 active:scale-95">
+                                            제출 (SUBMIT)
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-4xl font-black text-red-500 border-4 border-red-500 p-4 rounded-xl transform -rotate-12 opacity-80">
+                                        기회 박탈 (LOCKED)
+                                    </div>
+                                )}
+                            </div>
+                            <div className={`relative flex flex-col items-center justify-center transition-colors ${roundWinner==='p2' ? 'bg-red-900/40' : 'bg-slate-900'} ${p2Locked ? 'locked-overlay' : ''}`}>
+                                <div className="absolute top-4 right-4 font-black text-red-500 text-3xl">PLAYER 2</div>
+                                <div className="absolute top-4 left-4 font-mono text-white text-3xl font-bold">{p2Score}</div>
+                                
+                                {!p2Locked ? (
+                                    <div className="w-full max-w-md bg-slate-800/50 p-6 rounded-3xl border border-slate-600">
+                                        <label className="block text-gray-400 text-sm font-bold mb-2">답안 작성 (기회 1번)</label>
+                                        <input type="text" value={p2In} onChange={e => setP2In(e.target.value)} onKeyDown={e => e.key==='Enter' && !roundWinner && checkBattle('p2', p2In)} disabled={!!roundWinner} placeholder="입력하세요"
+                                            className="w-full bg-transparent border-b-2 border-red-500 text-center text-4xl text-white focus:outline-none pb-2 mb-6 placeholder-gray-600 font-mono" autoComplete="off" />
+                                        <button onClick={() => !roundWinner && checkBattle('p2', p2In)} className="w-full py-4 bg-red-600 text-white font-black text-xl rounded-xl shadow-lg hover:bg-red-500 transition-all hover:scale-105 active:scale-95">
+                                            제출 (SUBMIT)
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-4xl font-black text-red-500 border-4 border-red-500 p-4 rounded-xl transform rotate-12 opacity-80">
+                                        기회 박탈 (LOCKED)
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderSoloResult = () => (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                    <h2 className="text-6xl font-game text-white mb-4 neon-blue">GAME OVER</h2>
+                    <div className="glass p-12 rounded-[3rem] text-center w-full max-w-lg mb-8 border-t-4 border-blue-500">
+                        <div className="text-sm font-bold text-blue-400 tracking-widest mb-2">FINAL SCORE</div>
+                        <div className="text-8xl font-mono font-bold text-yellow-400 mb-8">{score.toLocaleString()}</div>
+                        <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-6 rounded-2xl">
+                            <div><div className="text-xs text-gray-500 mb-1">CORRECT</div><div className="text-2xl font-bold">{history.filter(h=>h.isCorrect).length} / {soloQs.length}</div></div>
+                            <div><div className="text-xs text-gray-500 mb-1">MODE</div><div className="text-2xl font-bold capitalize">{soloMode}</div></div>
+                        </div>
+                    </div>
+                    <div className="flex gap-4">
+                        <button onClick={() => setScene('note')} className="px-8 py-3 bg-red-600 rounded-xl font-bold hover:bg-red-500 transition-all">오답 노트</button>
+                        <button onClick={() => setScene('menu')} className="px-8 py-3 bg-gray-700 rounded-xl font-bold hover:bg-gray-600 transition-all">메인 메뉴</button>
+                    </div>
+                </div>
+            );
+
+            const renderBattleResult = () => {
+                const winner = p1Score > p2Score ? 'PLAYER 1' : p1Score < p2Score ? 'PLAYER 2' : 'DRAW';
+                const winColor = p1Score > p2Score ? 'text-blue-500' : p1Score < p2Score ? 'text-red-500' : 'text-white';
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                        <h2 className="text-5xl font-game text-white mb-10">BATTLE RESULT</h2>
+                        <div className="glass p-12 rounded-[3rem] w-full max-w-4xl flex flex-col items-center">
+                            <div className="text-center mb-12">
+                                <div className="text-xl text-gray-500 font-bold tracking-widest mb-2">CHAMPION</div>
+                                <div className={`text-9xl font-black italic ${winColor} neon-blue`}>{winner}</div>
+                            </div>
+                            <div className="w-full grid grid-cols-2 gap-8 mb-12">
+                                <div className={`p-8 rounded-3xl bg-slate-800 ${p1Score>p2Score ? 'border-4 border-blue-500' : 'opacity-50'}`}>
+                                    <div className="text-blue-400 font-bold mb-2">PLAYER 1</div>
+                                    <div className="text-6xl font-mono font-bold">{p1Score}</div>
+                                </div>
+                                <div className={`p-8 rounded-3xl bg-slate-800 ${p2Score>p1Score ? 'border-4 border-red-500' : 'opacity-50'}`}>
+                                    <div className="text-red-400 font-bold mb-2">PLAYER 2</div>
+                                    <div className="text-6xl font-mono font-bold">{p2Score}</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setScene('menu')} className="px-12 py-4 bg-white text-black font-black text-xl rounded-full hover:scale-105 transition-transform">MAIN MENU</button>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderNote = () => (
+                <div className="min-h-screen flex flex-col items-center p-4 pt-20">
+                    <h2 className="text-4xl font-game text-red-400 mb-8 neon-red">오답 노트</h2>
+                    <div className="w-full max-w-3xl space-y-6 pb-24">
+                        {history.filter(h=>!h.isCorrect).length === 0 ? (
+                            <div className="text-center text-gray-500 mt-20 text-xl">틀린 문제가 없습니다. 완벽해요! 👍</div>
+                        ) : (
+                            history.filter(h=>!h.isCorrect).map((h, i) => (
+                                <div key={i} className="glass p-8 rounded-2xl border-l-4 border-red-500">
+                                    <div className="flex justify-between mb-4 text-sm text-gray-400">
+                                        <span className="font-bold uppercase">{SUBJ_MAP[h.subject]}</span>
+                                        <span>TIER {h.diff}</span>
+                                    </div>
+                                    <div className="text-xl font-medium mb-6" dangerouslySetInnerHTML={{__html: h.q}}></div>
+                                    <div className="flex justify-between items-center bg-slate-900/50 p-4 rounded-xl">
+                                        <div className="text-red-400 line-through decoration-2">{h.userAns}</div>
+                                        <div className="text-green-400 font-bold text-xl">{h.a}</div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                    <div className="fixed bottom-6">
+                        <button onClick={() => setScene('result_solo')} className="px-10 py-3 bg-gray-800 hover:bg-gray-700 rounded-full font-bold shadow-xl">닫기</button>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="bg-[#0f172a] text-white min-h-screen">
+                    {scene === 'menu' && renderMenu()}
+                    {scene === 'setup_practice' && renderPracticeSetup()}
+                    {scene === 'game_solo' && renderSoloGame()}
+                    {scene === 'result_solo' && renderSoloResult()}
+                    {scene === 'note' && renderNote()}
+                    {scene === 'game_battle' && renderBattleGame()}
+                    {scene === 'result_battle' && renderBattleResult()}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
